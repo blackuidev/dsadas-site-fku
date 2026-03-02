@@ -1,31 +1,30 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
 import 'react-toastify/dist/ReactToastify.css';
+
+import Home from "./pages/Home";
+import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
+import Cart from "./pages/Cart";
+import Wishlist from "./pages/Wishlist";
+import Layout from "./components/shared/Layout";
+import NotFound from "./pages/NotFound";
 
 
 const queryClient = new QueryClient();
 
-// =======================================================
-// ✅ Wrapper that hides Header on specific routes
-// =======================================================
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    return (
-        <>
-            {/* {!shouldHideHeader && <Header />} */}
-            {children}
-        </>
-    );
-};
-// =======================================================
-
 const App = () => (
-    <div className="font-primarylw">
+    <div className="bg-white dark:bg-black text-gray-800 dark:text-gray-200 min-h-screen font-sans">
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
                 <Layout>
                     <Routes>
-                        <Route path="/" element={<Index />} />
+                        <Route path="/" element={<Home />} />
+                        <Route path="/products" element={<Products />} />
+                        <Route path="/products/:id" element={<ProductDetail />} />
+                        <Route path="/cart" element={<Cart />} />
+                        <Route path="/wishlist" element={<Wishlist />} />
+                        <Route path="*" element={<NotFound />} />
                     </Routes>
                 </Layout>
             </BrowserRouter>
