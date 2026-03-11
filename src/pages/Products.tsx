@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { products } from '@/lib/data';
 import ProductCard from '@/components/shared/ProductCard';
-import { GridDotBackground } from "@/components/lightswind/grid-dot-backgrounds";
+import { GridBackground } from "@/components/lightswind/grid-dot-backgrounds";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/lightswind/accordion";
 import { Checkbox } from "@/components/lightswind/checkbox";
 import { Slider } from "@/components/lightswind/slider";
@@ -10,7 +10,7 @@ import { Button } from "@/components/lightswind/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/lightswind/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/lightswind/sheet";
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile.tsx';
 
 const allCategories = [...new Set(products.map(p => p.category))];
 const allSizes = [...new Set(products.flatMap(p => p.sizes))];
@@ -143,7 +143,7 @@ const Products = () => {
     return (
         <div className="bg-background text-foreground min-h-screen">
             <div className="relative">
-                <GridDotBackground>
+                <GridBackground>
                     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
                         <motion.h1 
                             initial={{ opacity: 0, y: 20 }}
@@ -162,7 +162,7 @@ const Products = () => {
                             Discover the latest trends and timeless classics.
                         </motion.p>
                     </div>
-                </GridDotBackground>
+                </GridBackground>
             </div>
 
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

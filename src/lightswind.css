@@ -13,6 +13,8 @@
    ========================================================================== */
 
 /* Light (default) theme variables */
+@import "https://fonts.googleapis.com/css?family=Lato:100,300,400,700,900";
+
 :root {
   --primarylw: #173eff;
   --primarylw-2: #3758f9;
