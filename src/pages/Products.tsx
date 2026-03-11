@@ -1,88 +1,236 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { products } from '@/lib/data';
 import ProductCard from '@/components/shared/ProductCard';
-import { Slider } from '@/components/lightswind/slider';
+import { GridDotBackgrounds } from "@/components/lightswind/grid-dot-backgrounds";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/lightswind/accordion";
+import { Checkbox } from "@/components/lightswind/checkbox";
+import { Slider } from "@/components/lightswind/slider";
+import { Button } from "@/components/lightswind/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/lightswind/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/lightswind/sheet";
+import { SlidersHorizontal, X } from 'lucide-react';
+import { useMobile } from '@/hooks/use-mobile';
+
+const allCategories = [...new Set(products.map(p => p.category))];
+const allSizes = [...new Set(products.flatMap(p => p.sizes))];
+const minPrice = Math.min(...products.map(p => p.price));
+const maxPrice = Math.max(...products.map(p => p.price));
 
 const Products = () => {
-    const [filteredProducts, setFilteredProducts] = useState(products);
-    const [priceRange, setPriceRange] = useState([0, 1000]);
-    const [category, setCategory] = useState('all');
+    const [filters, setFilters] = useState({
+        categories: [],
+        sizes: [],
+        priceRange: [minPrice, maxPrice],
+    });
+    const [sortOption, setSortOption] = useState('newest');
+    const isMobile = useMobile();
 
-    const handleFilter = () => {
-        let tempProducts = products;
+    const handleCategoryChange = (category) => {
+        setFilters(prev => ({
+            ...prev,
+            categories: prev.categories.includes(category)
+                ? prev.categories.filter(c => c !== category)
+                : [...prev.categories, category]
+        }));
+    };
 
-        if (category !== 'all') {
-            tempProducts = tempProducts.filter(p => p.category.toLowerCase() === category);
-        }
+    const handleSizeChange = (size) => {
+        setFilters(prev => ({
+            ...prev,
+            sizes: prev.sizes.includes(size)
+                ? prev.sizes.filter(s => s !== size)
+                : [...prev.sizes, size]
+        }));
+    };
 
-        tempProducts = tempProducts.filter(p => p.salePrice >= priceRange[0] && p.salePrice <= priceRange[1]);
-
-        setFilteredProducts(tempProducts);
+    const handlePriceChange = (value) => {
+        setFilters(prev => ({ ...prev, priceRange: value }));
     };
     
-    // This should be run on mount and when filters change
-    useState(() => {
-        handleFilter();
-    });
+    const clearFilters = () => {
+        setFilters({
+            categories: [],
+            sizes: [],
+            priceRange: [minPrice, maxPrice],
+        });
+    };
 
-    const categories = ['all', ...Array.from(new Set(products.map(p => p.category.toLowerCase())))];
+    const filteredAndSortedProducts = useMemo(() => {
+        let filtered = products.filter(product => {
+            const categoryMatch = filters.categories.length === 0 || filters.categories.includes(product.category);
+            const sizeMatch = filters.sizes.length === 0 || product.sizes.some(s => filters.sizes.includes(s));
+            const priceMatch = product.price >= filters.priceRange[0] && product.price <= filters.priceRange[1];
+            return categoryMatch && sizeMatch && priceMatch;
+        });
 
-    return (
-        <div className="container mx-auto px-4 py-12">
-            <header className="text-center mb-12">
-                <h1 className="text-4xl font-bold">Our Collection</h1>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mt-2">Find the perfect dress for any occasion.</p>
-            </header>
-            <div className="flex flex-col md:flex-row gap-12">
-                {/* Filters */}
-                <aside className="w-full md:w-1/4">
-                    <div className="sticky top-24 space-y-8">
-                        <div>
-                            <h3 className="font-semibold text-lg mb-4">Category</h3>
-                            <select
-                                value={category}
-                                onChange={(e) => {
-                                    setCategory(e.target.value);
-                                    handleFilter();
-                                }}
-                                className="w-full p-2 border rounded bg-transparent border-gray-300 dark:border-gray-700"
-                            >
-                                {categories.map(cat => (
-                                    <option key={cat} value={cat} className="capitalize bg-white dark:bg-black">{cat}</option>
-                                ))}
-                            </select>
+        switch (sortOption) {
+            case 'price-asc':
+                return filtered.sort((a, b) => a.price - b.price);
+            case 'price-desc':
+                return filtered.sort((a, b) => b.price - a.price);
+            case 'newest':
+            default:
+                return filtered.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+        }
+    }, [filters, sortOption]);
+
+    const FilterSidebar = () => (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">Filters</h3>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-sm">Clear all</Button>
+            </div>
+            <Accordion type="multiple" defaultValue={['category', 'price']} className="w-full">
+                <AccordionItem value="category">
+                    <AccordionTrigger>Category</AccordionTrigger>
+                    <AccordionContent>
+                        <div className="space-y-2">
+                            {allCategories.map(category => (
+                                <div key={category} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`cat-${category}`}
+                                        checked={filters.categories.includes(category)}
+                                        onCheckedChange={() => handleCategoryChange(category)}
+                                    />
+                                    <label htmlFor={`cat-${category}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        {category}
+                                    </label>
+                                </div>
+                            ))}
                         </div>
-                        <div>
-                            <h3 className="font-semibold text-lg mb-4">Price Range</h3>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="price">
+                    <AccordionTrigger>Price</AccordionTrigger>
+                    <AccordionContent>
+                        <div className="p-2">
                             <Slider
-                                defaultValue={[500]}
-                                max={1000}
+                                defaultValue={filters.priceRange}
+                                min={minPrice}
+                                max={maxPrice}
                                 step={10}
-                                onValueChange={(value) => setPriceRange(value)}
-                                onValueCommit={handleFilter}
+                                onValueChange={handlePriceChange}
                             />
-                            <div className="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                <span>${priceRange[0]}</span>
-                                <span>${priceRange[1]}</span>
+                            <div className="flex justify-between text-sm mt-2">
+                                <span>${filters.priceRange[0]}</span>
+                                <span>${filters.priceRange[1]}</span>
                             </div>
                         </div>
-                    </div>
-                </aside>
-
-                {/* Product Grid */}
-                <main className="w-full md:w-3/4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {filteredProducts.map(product => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
-                    {filteredProducts.length === 0 && (
-                        <div className="text-center py-20">
-                            <p className="text-xl text-gray-500">No products found matching your criteria.</p>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="sizes">
+                    <AccordionTrigger>Sizes</AccordionTrigger>
+                    <AccordionContent>
+                        <div className="flex flex-wrap gap-2">
+                            {allSizes.map(size => (
+                                <Button
+                                    key={size}
+                                    variant={filters.sizes.includes(size) ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => handleSizeChange(size)}
+                                >
+                                    {size}
+                                </Button>
+                            ))}
                         </div>
-                    )}
-                </main>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </div>
+    );
+
+    return (
+        <div className="bg-background text-foreground min-h-screen">
+            <div className="relative">
+                <GridDotBackgrounds>
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+                        <motion.h1 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="text-4xl md:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-400 to-red-400"
+                        >
+                            Our Collection
+                        </motion.h1>
+                        <motion.p 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                            className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground"
+                        >
+                            Discover the latest trends and timeless classics.
+                        </motion.p>
+                    </div>
+                </GridDotBackgrounds>
             </div>
+
+            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* Filters */}
+                    {isMobile ? (
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="outline" className="lg:hidden flex items-center gap-2 mb-4">
+                                    <SlidersHorizontal className="h-4 w-4" />
+                                    Filters
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="left" className="w-[300px] sm:w-[400px] overflow-y-auto">
+                                <SheetHeader>
+                                    <SheetTitle>Filters</SheetTitle>
+                                </SheetHeader>
+                                <div className="p-4">
+                                    <FilterSidebar />
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    ) : (
+                        <aside className="lg:col-span-1">
+                            <div className="sticky top-24">
+                                <FilterSidebar />
+                            </div>
+                        </aside>
+                    )}
+
+                    {/* Products Grid */}
+                    <div className="lg:col-span-3">
+                        <div className="flex justify-between items-center mb-6">
+                            <p className="text-muted-foreground">{filteredAndSortedProducts.length} products</p>
+                            <Select value={sortOption} onValueChange={setSortOption}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="newest">Newest</SelectItem>
+                                    <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                                    <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <AnimatePresence>
+                            <motion.div 
+                                layout 
+                                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
+                            >
+                                {filteredAndSortedProducts.map((product, i) => (
+                                    <motion.div
+                                        key={product.id}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        transition={{ duration: 0.3, delay: i * 0.05 }}
+                                    >
+                                        <ProductCard product={product} />
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </main>
         </div>
     );
 };
